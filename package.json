@@ -1,0 +1,17 @@
+{
+  "name": "btc-race-bot",
+  "version": "1.0.0",
+  "description": "BTC Race 24h Trading Bot",
+  "main": "main.ts",
+  "scripts": {
+    "start": "node main.ts",
+    "test": "echo \"No tests specified\" && exit 0"
+  },
+  "keywords": [
+    "trading",
+    "bot",
+    "btc",
+    "makefun"
+  ],
+  "license": "MIT"
+}

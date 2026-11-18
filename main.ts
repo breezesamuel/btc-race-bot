@@ -23,11 +23,12 @@ let lastExitSeq = -RECOVERY_BARS;
 
 async function main(): Promise<void> {
   await runBars({
-    onBatch(state: BarsState, batch: { seq: bigint; bar?: Bar }): Order[] | void {
+    onBatch(state: BarsState, batch: { seq: number; bars?: Bar[] }): Order[] | void {
       if (state.warmingUp) return [];
 
       const seq = state.seq;
-      const bar = batch.bar;
+      const bars = batch.bars ?? [];
+      const bar = bars.find((b) => b.symbol === SYMBOL) ?? bars[0];
       if (!bar || !bar.c) return [];
 
       const price = BigInt(bar.c);
@@ -46,41 +47,18 @@ async function main(): Promise<void> {
           ? ((currentValue - positionNotional) * BPS) / positionNotional
           : -((positionNotional - currentValue) * BPS) / positionNotional;
 
-        // Partial TP at +80bps (sell half)
+        const sellQty = state.positions.get(SYMBOL)?.qty ?? 0n;
+
+        // Take profit at +80bps: close entire position
         if (pnlBps >= PARTIAL_TP_BPS) {
-          orders.push({ side: 'sell', symbol: SYMBOL, qty: 0n, max_slippage_bps: 500n });
-          // Close entire position on TP
-          orders.length = 0;
-          orders.push({
-            side: 'sell',
-            symbol: SYMBOL,
-            notional_quote_units: positionNotional,
-            max_slippage_bps: 500n,
-          });
-          positionNotional = 0n;
-          lastExitSeq = Number(seq);
-          tradeCount++;
-        }
-        // Full TP at +160bps
-        else if (pnlBps >= FULL_TP_BPS) {
-          orders.push({
-            side: 'sell',
-            symbol: SYMBOL,
-            notional_quote_units: positionNotional,
-            max_slippage_bps: 500n,
-          });
+          orders.push({ side: 'sell', symbol: SYMBOL, qty: sellQty, max_slippage_bps: 500 });
           positionNotional = 0n;
           lastExitSeq = Number(seq);
           tradeCount++;
         }
         // Stop loss at -100bps
         else if (pnlBps <= -SL_BPS) {
-          orders.push({
-            side: 'sell',
-            symbol: SYMBOL,
-            notional_quote_units: positionNotional,
-            max_slippage_bps: 500n,
-          });
+          orders.push({ side: 'sell', symbol: SYMBOL, qty: sellQty, max_slippage_bps: 500 });
           positionNotional = 0n;
           lastExitSeq = Number(seq);
           tradeCount++;
@@ -115,15 +93,14 @@ async function main(): Promise<void> {
         }
 
         if (ddFromHigh <= -DIP_TRIGGER_BPS && reboundOk) {
-          const minNotional = state.hello.fees.min_notional_quote_units;
-          const eq = state.equityQuoteUnits;
-          const notional = BigInt(Math.floor(Number(eq) * SIZE_FRAC));
-          if (notional >= BigInt(minNotional) && price > 0n) {
+          const minNotional = BigInt(state.hello.fees.min_notional_quote_units);
+          const notional = BigInt(Math.floor(Number(state.equity) * SIZE_FRAC));
+          if (notional >= minNotional && price > 0n) {
             orders.push({
               side: 'buy',
               symbol: SYMBOL,
               notional_quote_units: notional,
-              max_slippage_bps: 300n,
+              max_slippage_bps: 300,
             });
             positionNotional = notional;
             entryPrice = price;

@@ -6,11 +6,11 @@ const SYMBOL = 'CBBTC';
 
 // Proven parameters matching top performers
 const DIP_LOOKBACK = 60;         // 60-bar lookback for high
-const DIP_TRIGGER_BPS = 30n;     // Enter on >30bps dip (tuned from 50 for dev window)
+const DIP_TRIGGER_BPS = 60n;     // Enter on >60bps dip (deeper entries)
 const REBOUND_CHECK = false;     // Rebound check disabled (tuned for dev window)
-const PARTIAL_TP_BPS = 80n;      // Partial TP +0.8%
+const PARTIAL_TP_BPS = 140n;     // Partial TP +1.4%
 const FULL_TP_BPS = 160n;        // Full TP +1.6%
-const SL_BPS = 100n;             // Stop -1.0%
+const SL_BPS = 120n;             // Stop -1.2%
 const MAX_TRADES = 60;           // Max trades increased (tuned from 40)
 const RECOVERY_BARS = 10;
 const SIZE_FRAC = 0.75;          // 75% equity per trade (tuned from 0.65)
@@ -49,14 +49,14 @@ async function main(): Promise<void> {
 
         const sellQty = state.positions.get(SYMBOL)?.qty ?? 0n;
 
-        // Take profit at +80bps: close entire position
+        // Take profit at +140bps: close entire position
         if (pnlBps >= PARTIAL_TP_BPS) {
           orders.push({ side: 'sell', symbol: SYMBOL, qty: sellQty, max_slippage_bps: 500 });
           positionNotional = 0n;
           lastExitSeq = Number(seq);
           tradeCount++;
         }
-        // Stop loss at -100bps
+        // Stop loss at -120bps
         else if (pnlBps <= -SL_BPS) {
           orders.push({ side: 'sell', symbol: SYMBOL, qty: sellQty, max_slippage_bps: 500 });
           positionNotional = 0n;

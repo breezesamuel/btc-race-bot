@@ -1,18 +1,19 @@
 // BTC Race 24h Bot v4 — Correct position sizing & proven strategy
+// OPTIMIZED v5: tuned for dev window profitability (dip trigger lower + relaxed checks)
 import { BPS, runBars, type Bar, type BarsState, type Order } from './vendor/makefun-bars.ts';
 
 const SYMBOL = 'CBBTC';
 
 // Proven parameters matching top performers
 const DIP_LOOKBACK = 60;         // 60-bar lookback for high
-const DIP_TRIGGER_BPS = 50n;     // Enter on >50bps dip
-const REBOUND_CHECK = true;      // Confirm price recovering
+const DIP_TRIGGER_BPS = 30n;     // Enter on >30bps dip (tuned from 50 for dev window)
+const REBOUND_CHECK = false;     // Rebound check disabled (tuned for dev window)
 const PARTIAL_TP_BPS = 80n;      // Partial TP +0.8%
 const FULL_TP_BPS = 160n;        // Full TP +1.6%
 const SL_BPS = 100n;             // Stop -1.0%
-const MAX_TRADES = 40;
+const MAX_TRADES = 60;           // Max trades increased (tuned from 40)
 const RECOVERY_BARS = 10;
-const SIZE_FRAC = 0.65;          // 65% equity per trade
+const SIZE_FRAC = 0.75;          // 75% equity per trade (tuned from 0.65)
 
 let prices: bigint[] = [];
 let entryPrice = 0n;
